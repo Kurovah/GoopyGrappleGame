@@ -12,6 +12,8 @@ public class TestGrabbable : BasePhysics, IGrabbable, IChargeSource, IPhysicsUse
         set { charged = value; }
     }
 
+    public bool canBeGrabbed { get; set; }
+
     public void OnGrab()
     {
         
@@ -48,12 +50,6 @@ public class TestGrabbable : BasePhysics, IGrabbable, IChargeSource, IPhysicsUse
                 }
             }
         }
-    }
-
-    void FixedUpdate()
-    {
-        UpdatePhysics();
-        characterRidgidBody.velocity = velocity;
     }
 
     public void SetVelocity(Vector3 _newVel)

@@ -8,7 +8,6 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
 {
     [Header("Player Exclusive")]
     public bool canGrab;
-    public bool physicsPaused;
     bool usingSwingVel;
     bool charged;
     public float moveSpeed;
@@ -19,8 +18,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
     public Vector3 shotDir;
     public GameObject grappleHand;
     public GameObject grabbedItem;
-    public Sequence swingSequence;
-    public Sequence grabSequence;
+    public Sequence currentSequence;
     public bool isCharged { get { return charged; } set { charged = value; } }
     public enum PlayerStates
     {
@@ -73,14 +71,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
         
     }
 
-    private void FixedUpdate()
-    {
-        if (!physicsPaused)
-        {
-            UpdatePhysics();
-            characterRidgidBody.velocity = velocity;
-        }
-    }
+    
 
     #region state functions
     void NormalState()
@@ -147,7 +138,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
             if (grabbedItem == null)
             {
                 currentState = PlayerStates.grabbing;
-                grabSequence = GrabSequence();
+                SetCurrentSequence(GrabSequence());
             } else
             {
                 if (shotDir.normalized == Vector3.down)
@@ -198,8 +189,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
                 //for a swingable
                 if(swingInter != null)
                 {
-                    grabSequence.Kill();
-                    swingSequence = SwingSequence(hit.gameObject.transform.position);
+                    SetCurrentSequence(SwingSequence(hit.gameObject.transform.position));
                     break;
                 }
             }
@@ -234,7 +224,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
         //move to correct position
         Sequence s = DOTween.Sequence();
         s.AppendCallback(() => { facing = side; physicsPaused = true; DOVirtual.Float(startingAngle, 180 + side * 50, 0.2f, placeChar).SetEase(Ease.Linear); });
-        s.AppendCallback(() => { velocity = new Vector3(facing * 10, 8); physicsPaused = false; currentState = PlayerStates.normal; usingSwingVel = true; });
+        s.AppendCallback(() => { velocity = new Vector3(facing * 10, 15); physicsPaused = false; currentState = PlayerStates.normal; usingSwingVel = true; });
         s.Join(grappleHand.transform.DOLocalMove(Vector3.zero, 0.1f));
         s.AppendCallback(() => { grappleHand.SetActive(false); canGrab = true; });
         return s;
@@ -255,14 +245,15 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
         transform.position = new Vector3(grapplePoint.x + Mathf.Sin(_angle * Mathf.Deg2Rad) * dis, grapplePoint.y + Mathf.Cos(_angle * Mathf.Deg2Rad) * dis);
     }
 
-    public bool IsCharged()
-    {
-        return charged;
-    }
-
     void GetHurt(int _damage = 1)
     {
         hp -= _damage;
         EventManager.current.OnPlayerHurt();
+    }
+
+    public void SetCurrentSequence(Sequence _newSequence)
+    {
+        currentSequence.Kill();
+        currentSequence = _newSequence;
     }
 }

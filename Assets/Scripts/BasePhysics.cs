@@ -10,6 +10,9 @@ public class BasePhysics : MonoBehaviour
     public bool grounded;
     public LayerMask groundedIgnoreMask;
     public Rigidbody2D characterRidgidBody;
+    public bool physicsPaused;    
+
+
     public virtual void UpdatePhysics()
     {
         Physics2D.queriesHitTriggers = false;
@@ -50,6 +53,15 @@ public class BasePhysics : MonoBehaviour
             //stopping vertically
             if(velocity.y < 0)
                 velocity.y = 0;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!physicsPaused)
+        {
+            UpdatePhysics();
+            characterRidgidBody.velocity = velocity;
         }
     }
 
