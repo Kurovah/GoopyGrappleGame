@@ -8,7 +8,7 @@ public class Crawler : BaseEnemy,IGrabbable
     Sequence currentSequence;
     public LayerMask ignoreLayer;
     public int facing = 1;
-    float stunTime;
+    float stunTime = 0;
     enum CrawlerStates
     {
         normal,
@@ -17,7 +17,6 @@ public class Crawler : BaseEnemy,IGrabbable
         stunned,
     }
 
-    CrawlerStates currentState = CrawlerStates.normal;
     public float crawlVel;
     public bool canBeGrabbed { get; set; }
 
@@ -46,31 +45,43 @@ public class Crawler : BaseEnemy,IGrabbable
         if(Physics2D.Raycast(transform.position + Vector3.up * 0.5f,Vector2.right * facing, 5, LayerMask.GetMask("Player")))
         {
             //if player found charge
-            currentState = CrawlerStates.alerted;
+            if(!GameManager.current.player.invulnerable)
+                currentState = EnemyStates.reacting;
         }
     }
 
     void AlertState()
     {
-        if(!Physics2D.Raycast(transform.position + Vector3.up * 0.5f, Vector2.right * facing, 5, LayerMask.GetMask("Player")))
-        {
-            currentState = CrawlerStates.normal;
-        }
+        currentState = EnemyStates.reacting;
     }
 
     void ReactState()
     {
+        velocity.x = facing * crawlVel * 2;
         var groundDeectect = Physics2D.Raycast(transform.position + Vector3.right * .5f * facing, Vector2.down, 0.5f, ~ignoreLayer);
         //turn around at a wall or at a ledge
         if (!groundDeectect.collider || CheckForCol(Vector2.right * facing, 0.2f).Count > 0)
         {
-            currentState = CrawlerStates.normal;
+            currentState = EnemyStates.normal;
+        }
+
+
+        var hit = Physics2D.OverlapCircle(transform.position + Vector3.up / 2, 1, LayerMask.GetMask("Player"));
+        if(hit != null && !GameManager.current.player.invulnerable)
+        {
+            GameManager.current.player.GetHurt(_knockBack:new Vector2(facing * 10,10));
         }
     }
 
     void StunnedState()
     {
-
+        if(stunTime > 0 && grounded)
+        {
+            stunTime--;
+        } else
+        {
+            currentState = EnemyStates.normal;
+        }
     }
     #endregion
 
@@ -88,14 +99,21 @@ public class Crawler : BaseEnemy,IGrabbable
 
     public void OnThrow(Vector3 _direction)
     {
+        stunTime = 300;
         velocity = _direction;
-        currentState = CrawlerStates.stunned;
-        stunTime = 5;
+        currentState = EnemyStates.stunned;
     }
 
     public void SetCurrentSequence(Sequence _newSequence)
     {
         currentSequence.Kill();
         currentSequence = _newSequence;
+    }
+
+    public IEnumerator ResetStun()
+    {
+        Debug.Log("Bleh");
+        yield return new WaitForSeconds(5);       
+        currentState = EnemyStates.normal;
     }
 }

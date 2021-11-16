@@ -38,7 +38,6 @@ public class GameDisplay : MonoBehaviour
         {
             if(i < GameManager.current.player.hp)
             {
-                Debug.Log(i);
                 hpBarArea.GetChild(i).GetComponent<Image>().color = Color.red;
             } else
             {

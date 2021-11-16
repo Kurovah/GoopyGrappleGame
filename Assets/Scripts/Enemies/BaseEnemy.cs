@@ -15,7 +15,7 @@ public class BaseEnemy : BasePhysics,IHurtable
         stunned
     }
     protected Action NormalStateAction, AlertStateAction, ReactStateAction, StunnedStateAction;
-    EnemyStates currentState = EnemyStates.normal;
+    public EnemyStates currentState = EnemyStates.normal;
     // Update is called once per frame
     void Awake()
     {

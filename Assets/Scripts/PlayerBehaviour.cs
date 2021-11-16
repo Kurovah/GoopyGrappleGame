@@ -7,8 +7,7 @@ using DG.Tweening;
 public class PlayerBehaviour : BasePhysics, IChargeSource
 {
     [Header("Player Exclusive")]
-    public bool canGrab;
-    bool usingSwingVel;
+    public bool canGrab, invulnerable;
     bool charged;
     public float moveSpeed;
     public float facing = 1;
@@ -19,6 +18,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
     public GameObject grappleHand;
     public GameObject grabbedItem;
     public Sequence currentSequence;
+    public IEnumerator currentCoroutine;
     public bool isCharged { get { return charged; } set { charged = value; } }
     public enum PlayerStates
     {
@@ -87,25 +87,12 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
         }
 
         //moving horizontally and changing facing (half speed in air)
-        if (usingSwingVel)
-        {
-            if (Input.GetAxisRaw("Horizontal") != 0)
-            {
-                velocity.x = Input.GetAxisRaw("Horizontal") * moveSpeed;
-            }
-            else
-            {
-                usingSwingVel = false;
-            }
-        } else
-        {
-            velocity.x = Input.GetAxisRaw("Horizontal") * moveSpeed;
-        }
+        velocity.x = Input.GetAxisRaw("Horizontal") * moveSpeed;
 
         if (Input.GetAxisRaw("Horizontal") != 0)
             facing = Input.GetAxisRaw("Horizontal");
 
-
+        
         //jumping
         if (grounded)
         {
@@ -113,6 +100,8 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
             {
                 velocity.y = jumpPow;
             }
+
+            secondaryVel.x = Mathf.Lerp(secondaryVel.x, 0, 0.1f);
         } else
         {
             if (Input.GetKeyUp(KeyCode.J))
@@ -151,8 +140,9 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
                 grabbedItem.transform.position = transform.position + Vector3.up / 2 + shotDir * 1.2f;
                 grabbedItem.SetActive(true);
                 grabbedItem = null;
+                charged = false;
 
-                
+
             }
             
         }
@@ -224,7 +214,7 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
         //move to correct position
         Sequence s = DOTween.Sequence();
         s.AppendCallback(() => { facing = side; physicsPaused = true; DOVirtual.Float(startingAngle, 180 + side * 50, 0.2f, placeChar).SetEase(Ease.Linear); });
-        s.AppendCallback(() => { velocity = new Vector3(facing * 10, 15); physicsPaused = false; currentState = PlayerStates.normal; usingSwingVel = true; });
+        s.AppendCallback(() => { physicsPaused = false; secondaryVel.x = -facing * 5; velocity.y =  15;  currentState = PlayerStates.normal;});
         s.Join(grappleHand.transform.DOLocalMove(Vector3.zero, 0.1f));
         s.AppendCallback(() => { grappleHand.SetActive(false); canGrab = true; });
         return s;
@@ -245,15 +235,33 @@ public class PlayerBehaviour : BasePhysics, IChargeSource
         transform.position = new Vector3(grapplePoint.x + Mathf.Sin(_angle * Mathf.Deg2Rad) * dis, grapplePoint.y + Mathf.Cos(_angle * Mathf.Deg2Rad) * dis);
     }
 
-    void GetHurt(int _damage = 1)
+    public void GetHurt(int _damage = 1, Vector2 _knockBack = default)
     {
-        hp -= _damage;
-        EventManager.current.OnPlayerHurt();
+       hp -= _damage;
+       secondaryVel.x = _knockBack.x;
+       velocity.y = _knockBack.y;
+       SetCurrentCoroutine(InvTime());
+       EventManager.current.OnPlayerHurt();
     }
 
     public void SetCurrentSequence(Sequence _newSequence)
     {
         currentSequence.Kill();
         currentSequence = _newSequence;
+    }
+
+    public void SetCurrentCoroutine(IEnumerator _newCoroutine)
+    {
+        if (currentCoroutine != null)
+            StopCoroutine(currentCoroutine);
+
+        currentCoroutine = _newCoroutine;
+    }
+
+    IEnumerator InvTime(float Time = 1.5f)
+    {
+        invulnerable = true;
+        yield return new WaitForSeconds(Time);
+        invulnerable = false;
     }
 }
