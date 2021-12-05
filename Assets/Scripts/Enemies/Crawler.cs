@@ -9,6 +9,7 @@ public class Crawler : BaseEnemy,IGrabbable
     public LayerMask ignoreLayer;
     public int facing = 1;
     float stunTime = 0;
+    Coroutine stun;
     enum CrawlerStates
     {
         normal,
@@ -58,7 +59,7 @@ public class Crawler : BaseEnemy,IGrabbable
     void ReactState()
     {
         velocity.x = facing * crawlVel * 2;
-        var groundDeectect = Physics2D.Raycast(transform.position + Vector3.right * .5f * facing, Vector2.down, 0.5f, ~ignoreLayer);
+        var groundDeectect = Physics2D.Raycast(transform.position + Vector3.right * .75f * facing, Vector2.down, 0.5f, ~ignoreLayer);
         //turn around at a wall or at a ledge
         if (!groundDeectect.collider || CheckForCol(Vector2.right * facing, 0.2f).Count > 0)
         {
@@ -75,13 +76,8 @@ public class Crawler : BaseEnemy,IGrabbable
 
     void StunnedState()
     {
-        if(stunTime > 0 && grounded)
-        {
-            stunTime--;
-        } else
-        {
-            currentState = EnemyStates.normal;
-        }
+        if(stun == null)
+            stun = StartCoroutine(ResetStun());
     }
     #endregion
 
@@ -99,7 +95,7 @@ public class Crawler : BaseEnemy,IGrabbable
 
     public void OnThrow(Vector3 _direction)
     {
-        stunTime = 300;
+       
         velocity = _direction;
         currentState = EnemyStates.stunned;
     }
