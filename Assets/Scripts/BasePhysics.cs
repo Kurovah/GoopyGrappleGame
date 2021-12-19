@@ -5,10 +5,13 @@ using UnityEngine;
 public class BasePhysics : MonoBehaviour
 {
     [Header("Base Physics")]
-    public Vector3 velocity, secondaryVel;
-    public float gravityScale,friction,terminalVelocity;
+    public Vector3 velocity;
+    public float gravityScale, friction, terminalVelocity;
+    //collision variables
+    public Vector2 wallCollisionSize, floorCollisionSize;
+    public Vector2 rightOffset, leftOffset;
     public bool grounded;
-    public LayerMask groundedIgnoreMask;
+    public LayerMask groundMask;
     public Rigidbody2D characterRidgidBody;
     public bool physicsPaused;    
 
@@ -16,50 +19,8 @@ public class BasePhysics : MonoBehaviour
     public virtual void UpdatePhysics()
     {
         Physics2D.queriesHitTriggers = false;
-
-        List<RaycastHit2D> hits;
-        GroundCheck(out hits);
-        var groundedres = CheckForCol(Vector2.down, 0.01f);
-        grounded = groundedres.Count > 0;
-
-        //side collision
-        if (velocity.x != 0)
-        {
-            if (CheckForCol(Vector2.right * Mathf.Sign(velocity.x), 0.1f).Count > 0)
-            {
-                velocity.x = 0;
-            }
-        }
-
-        //bumping the ceiling
-        if (velocity.y > 0)
-        {
-            if (CheckForCol(Vector2.up, 0.01f).Count > 0)
-            {
-
-                velocity.y = 0;
-            }
-        }
-
-        if (!grounded)
-        {
-            //apply gravity
-            if(velocity.y > terminalVelocity)
-            {
-                velocity.y -= gravityScale;
-            }
-        } else
-        {
-            
-            //stopping horizontally
-            if (velocity.x != 0)
-            {
-                velocity.x -= Mathf.Sign(velocity.x) * friction;
-            }
-            //stopping vertically
-            if(velocity.y < 0)
-                velocity.y = 0;
-        }
+        GroundCheck();
+        WallCheck();
     }
 
     private void FixedUpdate()
@@ -67,7 +28,7 @@ public class BasePhysics : MonoBehaviour
         if (!physicsPaused)
         {
             UpdatePhysics();
-            characterRidgidBody.velocity = velocity + secondaryVel;
+            characterRidgidBody.velocity = new Vector2(velocity.x, characterRidgidBody.velocity.y);
         }
     }
 
@@ -78,16 +39,23 @@ public class BasePhysics : MonoBehaviour
         return hits;
     }
 
-    protected void GroundCheck(out List<RaycastHit2D> _hits)
+    protected void WallCheck()
     {
-        _hits = new List<RaycastHit2D>();
-        _hits.Add(Physics2D.Raycast(transform.position, Vector2.down, 0.1f, ~groundedIgnoreMask));
-        _hits.Add(Physics2D.Raycast(transform.position + Vector3.right * 0.25f, Vector2.down, 0.1f, ~groundedIgnoreMask));
-        _hits.Add(Physics2D.Raycast(transform.position + Vector3.left * 0.25f, Vector2.down, 0.1f, ~groundedIgnoreMask));
+        if ((Physics2D.OverlapBox((Vector2)transform.position + leftOffset, wallCollisionSize, 0, groundMask) && velocity.x < 0) || 
+            (Physics2D.OverlapBox((Vector2)transform.position + rightOffset, wallCollisionSize, 0, groundMask) && velocity.x > 0)) {
+            velocity.x = 0;
+        }
+    }
 
+    protected void GroundCheck()
+    {
+        grounded = Physics2D.OverlapBox(transform.position, floorCollisionSize, 0, groundMask);
+    }
 
-        
-
-        grounded = _hits.Count > 0;
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawWireCube((Vector2)transform.position, floorCollisionSize);
+        Gizmos.DrawWireCube((Vector2)transform.position + leftOffset, wallCollisionSize);
+        Gizmos.DrawWireCube((Vector2)transform.position + rightOffset, wallCollisionSize);
     }
 }

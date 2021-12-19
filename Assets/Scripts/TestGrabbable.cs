@@ -35,6 +35,9 @@ public class TestGrabbable : BasePhysics, IGrabbable, IChargeSource, IPhysicsUse
     //put physics related updates in the fixed updates
     void Update()
     {
+        if (grounded)
+            velocity.x = Mathf.Lerp(velocity.x, 0, 0.01f);
+
         if (hasBeenThrown)
         {
             var hits = CheckForCol(velocity, 0.2f);

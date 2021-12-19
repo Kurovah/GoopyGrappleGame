@@ -8,7 +8,6 @@ public class LevelSelectorBehaviour : MonoBehaviour
 {
     LevelSelectionOption currentOption;
     public float pauseFrames;
-    bool canScroll = true;
     float scrollBuffer = 60;
     // Start is called before the first frame update
     void Start()
@@ -71,16 +70,5 @@ public class LevelSelectorBehaviour : MonoBehaviour
         }
         currentOption = transform.GetChild(index).GetComponent<LevelSelectionOption>();
         currentOption.SetHighlighted(true);
-    }
-
-
-
-    IEnumerable PauseScroll()
-    {
-        Debug.Log("Paused");
-        canScroll = false;
-        yield return new WaitForSeconds(pauseFrames);
-        canScroll = true;
-        Debug.Log("unPaused");
     }
 }

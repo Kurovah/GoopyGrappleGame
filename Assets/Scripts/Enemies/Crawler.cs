@@ -8,7 +8,6 @@ public class Crawler : BaseEnemy,IGrabbable
     Sequence currentSequence;
     public LayerMask ignoreLayer;
     public int facing = 1;
-    float stunTime = 0;
     Coroutine stun;
     enum CrawlerStates
     {
@@ -17,16 +16,25 @@ public class Crawler : BaseEnemy,IGrabbable
         attacking,
         stunned,
     }
-
+    CrawlerStates currentState;
     public float crawlVel;
     public bool canBeGrabbed { get; set; }
 
-    protected override void InitStateFunctions()
+    protected override void UpdateStates()
     {
-        NormalStateAction = NormalState;
-        AlertStateAction = AlertState;
-        ReactStateAction = ReactState;
-        StunnedStateAction = StunnedState;
+        switch (currentState)
+        {
+            case CrawlerStates.normal:
+                NormalState();
+                break;
+            case CrawlerStates.alerted:
+                AlertState();
+                break;
+            case CrawlerStates.attacking:
+                break;
+            case CrawlerStates.stunned:
+                break;
+        }
     }
 
     #region state functions
@@ -47,13 +55,13 @@ public class Crawler : BaseEnemy,IGrabbable
         {
             //if player found charge
             if(!GameManager.current.player.invulnerable)
-                currentState = EnemyStates.reacting;
+                currentState = CrawlerStates.alerted;
         }
     }
 
     void AlertState()
     {
-        currentState = EnemyStates.reacting;
+        currentState = CrawlerStates.attacking;
     }
 
     void ReactState()
@@ -63,7 +71,7 @@ public class Crawler : BaseEnemy,IGrabbable
         //turn around at a wall or at a ledge
         if (!groundDeectect.collider || CheckForCol(Vector2.right * facing, 0.2f).Count > 0)
         {
-            currentState = EnemyStates.normal;
+            currentState = CrawlerStates.normal;
         }
 
 
@@ -97,7 +105,7 @@ public class Crawler : BaseEnemy,IGrabbable
     {
        
         velocity = _direction;
-        currentState = EnemyStates.stunned;
+        currentState = CrawlerStates.stunned;
     }
 
     public void SetCurrentSequence(Sequence _newSequence)
@@ -110,6 +118,6 @@ public class Crawler : BaseEnemy,IGrabbable
     {
         Debug.Log("Bleh");
         yield return new WaitForSeconds(5);       
-        currentState = EnemyStates.normal;
+        currentState = CrawlerStates.normal;
     }
 }
